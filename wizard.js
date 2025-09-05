@@ -1,15 +1,15 @@
-// Build-time marker
-document.getElementById('build').textContent = new Date().toISOString();
-
-// Helpers
+// Show build time
 const $ = (id) => document.getElementById(id);
+const safeSet = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+safeSet('build', new Date().toISOString());
+
+// Helpers & math
 const fmt = (v, cur) => (cur || '$') + Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
 const throughputToAHTReduction = (pct) => {
   const f = 1 + (pct/100);
   return f > 0 ? (1 - (1/f)) * 100 : 0;
 };
 
-// State
 const state = {
   step: 1,
   inputs: {
@@ -29,7 +29,6 @@ const state = {
   }
 };
 
-// Math
 const computeRevenueProtected = (i) =>
   (i.annualRevenueAtRisk || 0) * (i.csatUpliftPct || 0) / 100;
 
@@ -201,4 +200,81 @@ function bindNav(){
   const b2 = $('back2');     if(b2) b2.addEventListener('click',  ()=>setStep(1));
   const c2 = $('continue2'); if(c2) c2.addEventListener('click', ()=>setStep(3));
   const b3 = $('back3');     if(b3) b3.addEventListener('click',  ()=>setStep(2));
-  c
+  const rs = $('restart');   if(rs) rs.addEventListener('click',  ()=>{ state.inputs = {...state.inputs}; setStep(1); });
+
+  const dl = $('download');
+  if (dl) dl.addEventListener('click', ()=>{
+    const i = state.inputs, o = compute(i);
+    const rows = [
+      ['Metric','Value'],
+      ['Number of agents', i.agents],
+      ['Cost per agent / year', i.agentCostYear],
+      ['Tickets per month', i.ticketsPerMonth],
+      ['Baseline AHT (min)', i.aht],
+      ['AHT reduction %', i.ahtReductionPct],
+      ['QA hours baseline / agent / month', i.qaHoursBaseline],
+      ['QA automation %', i.qaAutomationPct],
+      ['Manager hours saved / agent / month', i.managerHoursSaved],
+      ['Annual revenue at risk', i.annualRevenueAtRisk],
+      ['CSAT uplift %', i.csatUpliftPct],
+      ['Revenue protected (annual)', Math.round(o.revenueProtected)],
+      ['AHT labor savings (annual)', Math.round(o.ahtSavings)],
+      ['QA automation savings (annual)', Math.round(o.qaSavings)],
+      ['Manager time savings (annual)', Math.round(o.mgrSavings)],
+      ['Total annual impact', Math.round(o.total)]
+    ];
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'kaizo-roi-snapshot.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 400);
+  });
+}
+
+function bindPresets(){
+  const foot = $('presetFoot');
+  if (foot) foot.addEventListener('click', ()=>{
+    state.inputs.ahtReductionPct = 75;
+    state.inputs.qaAutomationPct = Math.max(state.inputs.qaAutomationPct, 70);
+    state.inputs.managerHoursSaved = Math.max(state.inputs.managerHoursSaved, 1.5);
+    render();
+  });
+
+  const t212 = $('presetT212');
+  if (t212) t212.addEventListener('click', ()=>{
+    state.inputs.csatUpliftPct = 93;
+    state.inputs.annualRevenueAtRisk = state.inputs.annualRevenueAtRisk || 500000;
+    state.inputs.revenueProtected = 0; // let auto-calc kick in
+    render();
+  });
+
+  const g1 = $('presetG1');
+  if (g1) g1.addEventListener('click', ()=>{
+    const eff = throughputToAHTReduction(50); // ~33.3%
+    state.inputs.ahtReductionPct = Math.max(state.inputs.ahtReductionPct, +eff.toFixed(1));
+    render();
+  });
+}
+
+// Router-ish
+function setStep(n){
+  state.step = n;
+  ['s1','s2','s3'].forEach((id,idx)=>{ const el=$(id); if(el) el.className = (idx < n) ? 'on' : ''; });
+  render();
+}
+
+function render(){
+  const app = $('app');
+  if (!app) return;
+  if (state.step === 1) app.innerHTML = screenInputs(state.inputs);
+  if (state.step === 2) app.innerHTML = screenScenarios(state.inputs);
+  if (state.step === 3) app.innerHTML = screenResults(state.inputs);
+  bindInputs();
+  bindNav();
+  bindPresets();
+}
+
+// Init
+window.addEventListener('DOMContentLoaded', render);
