@@ -18,22 +18,22 @@
   .wrap{max-width:900px;margin:0 auto;padding:20px}
   header{padding-top:24px;padding-bottom:8px;text-align:center}
 
-  /* UPDATED: bigger logo */
+  /* UPDATED: smaller logo (60px high) */
   .logo{
     display:block;
     margin:0 auto 10px;
-    height:120px;          /* was 34px — now ~3–4× bigger */
+    height:60px;          /* was 120px */
     max-width:90%;
     object-fit:contain;
   }
 
-  /* UPDATED: larger & bold subtitle */
+  /* Subtitle: larger & bold */
   .subtitle{
     margin:8px auto 12px;
     max-width:680px;
     color:#cfe0ff;
-    font-size:18px;        /* was 14px */
-    font-weight:600;       /* bold */
+    font-size:18px;
+    font-weight:600;
     opacity:.95;
   }
 
@@ -50,7 +50,7 @@
 
   /* (Optional) responsive tweak for very small screens */
   @media (max-width:520px){
-    .logo{height:88px}
+    .logo{height:56px}
     .subtitle{font-size:16px}
   }
 
@@ -64,7 +64,7 @@
   .muted{font-size:12px;color:#8fa6db}
   footer{color:#8fa6db;font-size:12px;margin:10px 0 26px;text-align:left}
 
-  /* Pretty gradient used as a fallback banner in JS if an image fails */
+  /* Gradient hero (used as fallback if results image fails) */
   .hero{
     width:100%;height:160px;border-radius:14px;border:1px solid rgba(255,255,255,.1);
     background:
@@ -99,6 +99,6 @@
   </div>
 
   <!-- Script must be next to this file. If using /app + rewrites, /wizard.js also works -->
-  <script defer src="./wizard.js?v=5"></script>
+  <script defer src="./wizard.js?v=6"></script>
 </body>
 </html>
