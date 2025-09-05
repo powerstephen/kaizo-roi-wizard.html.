@@ -1,15 +1,25 @@
-// Show build time
+// ---------- Build stamp ----------
 const $ = (id) => document.getElementById(id);
 const safeSet = (id, val) => { const el = $(id); if (el) el.textContent = val; };
 safeSet('build', new Date().toISOString());
 
-// Helpers & math
+// ---------- Theme helpers (optional: tweak brand colors here) ----------
+(function applyTheme(vars){
+  const r = document.documentElement;
+  Object.entries(vars).forEach(([k,v]) => r.style.setProperty(`--${k}`, v));
+})({
+  // Set these to match your logo palette if you like
+  // bg:'#0b1020', bg2:'#0e1530', card:'#111936', accent:'#66a3ff', good:'#19c37d'
+});
+
+// ---------- Math helpers ----------
 const fmt = (v, cur) => (cur || '$') + Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
 const throughputToAHTReduction = (pct) => {
   const f = 1 + (pct/100);
   return f > 0 ? (1 - (1/f)) * 100 : 0;
 };
 
+// ---------- State ----------
 const state = {
   step: 1,
   inputs: {
@@ -23,9 +33,11 @@ const state = {
     qaHoursBaseline: 6,
     qaAutomationPct: 70,
     managerHoursSaved: 1.5,
+
+    // CSAT → Revenue protection
     annualRevenueAtRisk: 500000,
     csatUpliftPct: 0,
-    revenueProtected: 0
+    revenueProtected: 0   // leave 0 to auto-calc from csatUpliftPct * annualRevenueAtRisk
   }
 };
 
@@ -34,23 +46,29 @@ const computeRevenueProtected = (i) =>
 
 function compute(i){
   const hourlyCost = i.agentCostYear / i.hoursYear;
-  const revenueProtectedAuto = computeRevenueProtected(i);
-  const revenueProtected = (i.revenueProtected && i.revenueProtected > 0) ? i.revenueProtected : revenueProtectedAuto;
 
+  const revenueProtectedAuto = computeRevenueProtected(i);
+  const revenueProtected = (i.revenueProtected && i.revenueProtected > 0)
+    ? i.revenueProtected
+    : revenueProtectedAuto;
+
+  // AHT savings
   const minutesSavedPerTicket = i.aht * (i.ahtReductionPct/100);
   const hoursSavedPerMonth = (i.ticketsPerMonth * minutesSavedPerTicket) / 60;
   const ahtSavings = hoursSavedPerMonth * 12 * hourlyCost;
 
+  // QA automation savings
   const qaHoursSavedPerAgentYear = i.qaHoursBaseline * (i.qaAutomationPct/100) * 12;
   const qaSavings = qaHoursSavedPerAgentYear * i.agents * hourlyCost;
 
+  // Manager time savings
   const mgrSavings = i.managerHoursSaved * 12 * i.agents * hourlyCost;
 
   const total = ahtSavings + qaSavings + mgrSavings + revenueProtected;
   return {hourlyCost,ahtSavings,qaSavings,mgrSavings,revenueProtected,total};
 }
 
-// Views
+// ---------- Views ----------
 function screenInputs(i){
   return `
     <div class="grid2">
@@ -152,6 +170,11 @@ function screenScenarios(i){
 
 function screenResults(i){
   const o = compute(i);
+
+  // IMPORTANT: if your image is next to index.html, keep "./results-hero.png"
+  // If you use /app + rewrites, change to "/results-hero.png"
+  const resultsImageSrc = "./results-hero.png?v=1";
+
   return `
     <section class="card">
       <h2>Annual Impact (Estimated)</h2>
@@ -162,8 +185,17 @@ function screenResults(i){
       <div class="kpi"><div class="lab"><span class="big">Total Annual Impact</span></div><div class="val big good">${fmt(o.total,i.currency)}</div></div>
       <div class="muted">All figures are directional estimates for planning. Adjust inputs to fit your environment.</div>
 
-      <div class="hero" style="margin-top:14px"></div>
-      <div class="muted" style="margin-top:6px">Swap this banner for product screenshots or a customer logo wall.</div>
+      <!-- RESULTS IMAGE -->
+      <div class="imgwrap" style="margin-top:14px">
+        <img
+          src="${resultsImageSrc}"
+          alt="Customer experience powered by Kaizo"
+          loading="lazy"
+          style="width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.1);display:block;object-fit:cover"
+          data-hide-on-error
+        />
+      </div>
+      <div class="muted" style="margin-top:6px">Example visualization — replace with a product screenshot or customer logo wall.</div>
     </section>
 
     <div class="rowbtn">
@@ -175,7 +207,7 @@ function screenResults(i){
     </div>`;
 }
 
-// Bindings
+// ---------- Bindings ----------
 function bindInputs(){
   document.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('input', e=>{
@@ -246,7 +278,7 @@ function bindPresets(){
   if (t212) t212.addEventListener('click', ()=>{
     state.inputs.csatUpliftPct = 93;
     state.inputs.annualRevenueAtRisk = state.inputs.annualRevenueAtRisk || 500000;
-    state.inputs.revenueProtected = 0; // let auto-calc kick in
+    state.inputs.revenueProtected = 0; // let auto-calc take over
     render();
   });
 
@@ -258,7 +290,7 @@ function bindPresets(){
   });
 }
 
-// Router-ish
+// ---------- Router & render ----------
 function setStep(n){
   state.step = n;
   ['s1','s2','s3'].forEach((id,idx)=>{ const el=$(id); if(el) el.className = (idx < n) ? 'on' : ''; });
@@ -268,13 +300,20 @@ function setStep(n){
 function render(){
   const app = $('app');
   if (!app) return;
+
   if (state.step === 1) app.innerHTML = screenInputs(state.inputs);
   if (state.step === 2) app.innerHTML = screenScenarios(state.inputs);
   if (state.step === 3) app.innerHTML = screenResults(state.inputs);
+
+  // Hide optional images if they fail (keeps layout clean)
+  document.querySelectorAll('img[data-hide-on-error]').forEach(img => {
+    img.addEventListener('error', () => { img.style.display = 'none'; });
+  });
+
   bindInputs();
   bindNav();
   bindPresets();
 }
 
-// Init
+// ---------- Init ----------
 window.addEventListener('DOMContentLoaded', render);
