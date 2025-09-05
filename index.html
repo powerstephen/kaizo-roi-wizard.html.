@@ -5,13 +5,38 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Kaizo ROI Calculator — Wizard</title>
 <style>
-  :root{--bg:#0b1020;--card:#111936;--muted:#9fb0d9;--text:#e9f0ff;--accent:#66a3ff;--good:#19c37d}
+  :root{
+    --bg:#0b1020; --bg2:#0e1530; --card:#111936;
+    --muted:#9fb0d9; --text:#e9f0ff; --accent:#66a3ff; --good:#19c37d;
+  }
   *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg) 60%,#0e1530);color:var(--text)}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,var(--bg),var(--bg) 60%,var(--bg2));
+    color:var(--text);
+  }
   .wrap{max-width:900px;margin:0 auto;padding:20px}
   header{padding-top:24px;padding-bottom:8px;text-align:center}
-  .subtitle{margin:8px auto 12px;max-width:680px;color:#cfe0ff;font-size:14px;opacity:.9}
-  .logo{display:block;margin:0 auto 6px;height:34px}
+
+  /* UPDATED: bigger logo */
+  .logo{
+    display:block;
+    margin:0 auto 10px;
+    height:120px;          /* was 34px — now ~3–4× bigger */
+    max-width:90%;
+    object-fit:contain;
+  }
+
+  /* UPDATED: larger & bold subtitle */
+  .subtitle{
+    margin:8px auto 12px;
+    max-width:680px;
+    color:#cfe0ff;
+    font-size:18px;        /* was 14px */
+    font-weight:600;       /* bold */
+    opacity:.95;
+  }
+
   .stepper{display:flex;gap:8px;margin:12px auto 0;max-width:360px}
   .stepper div{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.08)}
   .stepper .on{background:var(--good)}
@@ -22,46 +47,6 @@
   input:focus{border-color:var(--accent)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media (max-width:880px){.grid2{grid-template-columns:1fr}}
-  .kpi{display:flex;align-items:center;justify-content:space-between;margin:10px 0;padding:10px 12px;background:#0c1430;border:1px solid rgba(255,255,255,.08);border-radius:12px}
-  .kpi .lab{color:#c8d8ff;font-size:12px}
-  .kpi .val{font-weight:700}
-  .big{font-size:22px}
-  .good{color:var(--good)}
-  .rowbtn{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
-  .btn{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:#0b1228;color:#e9f0ff;cursor:pointer}
-  .muted{font-size:12px;color:#8fa6db}
-  footer{color:#8fa6db;font-size:12px;margin:10px 0 26px;text-align:left}
-  .hero{width:100%;height:160px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:
-    radial-gradient(120px 80px at 20% 50%, #1a2f6c, transparent),
-    radial-gradient(140px 90px at 70% 40%, #143d3a, transparent),
-    linear-gradient(160deg,#0a1025,#0b1432 70%,#0c1a3e)}
-  .presets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-  @media (max-width:880px){.presets{grid-template-columns:1fr}}
-  .preset{background:#0c1430;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px}
-  .preset h3{margin:0 0 4px;font-size:14px}
-  .badge{display:inline-block;font-size:11px;color:#d6e4ff;background:#0b1228;border:1px solid rgba(255,255,255,.12);padding:4px 8px;border-radius:10px;margin:6px 0}
-  .preset .btn{margin-top:8px;width:100%}
-</style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <!-- Use your real logo filename; keep this SVG as a fallback if you like -->
-      <img src="./kaizo-logo.png" alt="Kaizo" class="logo"
-           onerror="this.outerHTML='<div style=&quot;font-weight:600;letter-spacing:.2px;font-size:20px;opacity:.95&quot;>KAIZO</div>'" />
-      <p class="subtitle">
-        Enter your details to estimate annual savings from AHT reduction, QA automation, manager time saved, and CSAT-driven revenue protection.
-        Use the case-study presets to see what similar teams achieved with Kaizo.
-      </p>
-      <div class="stepper"><div id="s1" class="on"></div><div id="s2"></div><div id="s3"></div></div>
-    </header>
 
-    <main id="app">Loading…</main>
-
-    <footer>Client-side only demo. Build: <span id="build"></span></footer>
-  </div>
-
-  <!-- Important: relative path, same folder -->
-  <script defer src="./wizard.js?v=4"></script>
-</body>
-</html>
+  /* (Optional) responsive tweak for very small screens */
+  @media
