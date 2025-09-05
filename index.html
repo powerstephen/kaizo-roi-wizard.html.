@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Kaizo ROI Calculator — Wizard</title>
 <style>
   :root{--bg:#0b1020;--card:#111936;--muted:#9fb0d9;--text:#e9f0ff;--accent:#66a3ff;--good:#19c37d}
@@ -10,8 +10,8 @@
   body{margin:0;background:linear-gradient(180deg,var(--bg),var(--bg) 60%,#0e1530);color:var(--text)}
   .wrap{max-width:900px;margin:0 auto;padding:20px}
   header{padding-top:24px;padding-bottom:8px;text-align:center}
-  .logo{height:34px;display:block;margin:0 auto 8px}
-  .subtitle{margin:0 auto 12px;max-width:680px;color:#cfe0ff;font-size:14px;opacity:.9}
+  .subtitle{margin:8px auto 12px;max-width:680px;color:#cfe0ff;font-size:14px;opacity:.9}
+  .logo{display:block;margin:0 auto 6px;height:34px}
   .stepper{display:flex;gap:8px;margin:12px auto 0;max-width:360px}
   .stepper div{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.08)}
   .stepper .on{background:var(--good)}
@@ -35,8 +35,6 @@
     radial-gradient(120px 80px at 20% 50%, #1a2f6c, transparent),
     radial-gradient(140px 90px at 70% 40%, #143d3a, transparent),
     linear-gradient(160deg,#0a1025,#0b1432 70%,#0c1a3e)}
-
-  /* Case-study presets */
   .presets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
   @media (max-width:880px){.presets{grid-template-columns:1fr}}
   .preset{background:#0c1430;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px}
@@ -48,162 +46,24 @@
 <body>
   <div class="wrap">
     <header>
-      <!-- Replace src with your real logo file name in the same folder -->
-      <img src="kaizo-logo.svg" alt="Kaizo" class="logo" onerror="this.outerHTML='<div style=&quot;font-weight:600;letter-spacing:.2px;font-size:20px;opacity:.95&quot;>KAIZO</div>'">
+      <!-- Inline wordmark fallback; swap this for <img src="kaizo-logo.svg" class="logo" /> anytime -->
+      <svg class="logo" viewBox="0 0 120 24" aria-label="Kaizo">
+        <text x="0" y="18" font-size="18" font-family="Inter,system-ui,sans-serif" fill="#e9f0ff" opacity="0.95">KAIZO</text>
+      </svg>
       <p class="subtitle">
-        Enter your details to estimate annual savings from AHT reduction, QA automation, manager time saved, and CSAT-driven revenue protection. 
+        Enter your details to estimate annual savings from AHT reduction, QA automation, manager time saved, and CSAT-driven revenue protection.
         Use the case-study presets to see what similar teams achieved with Kaizo.
       </p>
       <div class="stepper"><div id="s1" class="on"></div><div id="s2"></div><div id="s3"></div></div>
     </header>
 
-    <main id="app"></main>
+    <main id="app">Loading…</main>
 
     <footer>Client-side only demo. Build: <span id="build"></span></footer>
   </div>
 
-<script>
-  // ---------- Utilities ----------
-  const $ = (id) => document.getElementById(id);
-  const fmt = (v, cur) => (cur || '$') + Number(v).toLocaleString(undefined,{maximumFractionDigits:0});
-
-  // Convert throughput increase (e.g., +50%) to an "effective AHT reduction" fraction.
-  // Simple model: if you handle 1.5x tickets, effective per-ticket time drops ~1/1.5 (≈33% reduction).
-  function throughputToAHTReduction(throughputPct){
-    const f = 1 + (throughputPct/100);
-    if (f <= 0) return 0;
-    return (1 - (1/f)) * 100; // %
-  }
-
-  const state = {
-    step: 1,
-    inputs: {
-      agents: 25,
-      agentCostYear: 60000,
-      ticketsPerMonth: 30000,
-      aht: 7,
-      hoursYear: 2080,
-      currency: '$',
-      ahtReductionPct: 12,
-      qaHoursBaseline: 6,
-      qaAutomationPct: 70,
-      managerHoursSaved: 1.5,
-
-      // Revenue protection via CSAT uplift
-      annualRevenueAtRisk: 500000,   // user editable
-      csatUpliftPct: 0,              // user editable
-      revenueProtected: 0            // computed from the two above (but user can still override if desired)
-    }
-  };
-
-  function computeRevenueProtected(i){
-    // Very simple assumption: protect 'annualRevenueAtRisk' in proportion to CSAT uplift
-    // (e.g., 93% uplift protects ~0.93 * at-risk revenue). Adjust to your preferred model later.
-    return (i.annualRevenueAtRisk || 0) * (i.csatUpliftPct || 0) / 100;
-  }
-
-  function compute(i){
-    const hourlyCost = i.agentCostYear / i.hoursYear;
-
-    // Revenue protected auto-calculates from CSAT fields but can be overridden by editing 'revenueProtected'.
-    const revenueProtectedAuto = computeRevenueProtected(i);
-    const revenueProtected = (i.revenueProtected && i.revenueProtected > 0) ? i.revenueProtected : revenueProtectedAuto;
-
-    // AHT savings
-    const minutesSavedPerTicket = i.aht * (i.ahtReductionPct/100);
-    const hoursSavedPerMonth = (i.ticketsPerMonth * minutesSavedPerTicket) / 60;
-    const ahtSavings = hoursSavedPerMonth * 12 * hourlyCost;
-
-    // QA automation savings
-    const qaHoursSavedPerAgentYear = i.qaHoursBaseline * (i.qaAutomationPct/100) * 12;
-    const qaSavings = qaHoursSavedPerAgentYear * i.agents * hourlyCost;
-
-    // Manager time savings
-    const mgrSavings = i.managerHoursSaved * 12 * i.agents * hourlyCost;
-
-    const total = ahtSavings + qaSavings + mgrSavings + revenueProtected;
-    return {hourlyCost,ahtSavings,qaSavings,mgrSavings,revenueProtected,total};
-  }
-
-  function setStep(n){
-    state.step = n;
-    ['s1','s2','s3'].forEach((id,idx)=>{ $(id).className = (idx < n) ? 'on' : ''; });
-    render();
-  }
-
-  // ---------- Screens ----------
-  function screenInputs(){
-    const i = state.inputs;
-    return `
-      <div class="grid2">
-        <section class="card">
-          <h2>Team & Cost Assumptions</h2>
-          <div class="grid2">
-            <div><label>Number of agents</label><input id="agents" type="number" min="1" value="${i.agents}"></div>
-            <div><label>Fully-loaded cost per agent / year (USD)</label><input id="agentCostYear" type="number" min="0" step="500" value="${i.agentCostYear}"></div>
-          </div>
-          <div class="grid2">
-            <div><label>Tickets per month (total)</label><input id="ticketsPerMonth" type="number" min="0" step="100" value="${i.ticketsPerMonth}"></div>
-            <div><label>Baseline AHT (minutes)</label><input id="aht" type="number" min="0" step="0.1" value="${i.aht}"></div>
-          </div>
-          <div class="grid2">
-            <div><label>Work hours per agent / year</label><input id="hoursYear" type="number" min="1" step="10" value="${i.hoursYear}"></div>
-            <div><label>Currency symbol</label><input id="currency" type="text" value="${i.currency}"></div>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2>Expected Kaizo Impact</h2>
-          <div class="grid2">
-            <div><label>AHT reduction (%) via coaching insights</label><input id="ahtReductionPct" type="number" min="0" max="100" step="1" value="${i.ahtReductionPct}"></div>
-            <div><label>QA hours per agent / month (baseline manual)</label><input id="qaHoursBaseline" type="number" min="0" step="0.5" value="${i.qaHoursBaseline}"></div>
-          </div>
-          <div class="grid2">
-            <div><label>QA automation coverage with Kaizo (%)</label><input id="qaAutomationPct" type="number" min="0" max="100" step="1" value="${i.qaAutomationPct}"></div>
-            <div><label>Manager coaching hours saved / agent / month</label><input id="managerHoursSaved" type="number" min="0" step="0.1" value="${i.managerHoursSaved}"></div>
-          </div>
-        </section>
-      </div>
-
-      <section class="card">
-        <h2>CSAT → Revenue Protection</h2>
-        <div class="grid2">
-          <div><label>Annual revenue at risk (USD)</label><input id="annualRevenueAtRisk" type="number" min="0" step="1000" value="${i.annualRevenueAtRisk}"></div>
-          <div><label>CSAT uplift (%)</label><input id="csatUpliftPct" type="number" min="0" max="100" step="1" value="${i.csatUpliftPct}"></div>
-        </div>
-        <div class="grid2">
-          <div><label>Revenue protected (auto from CSAT) — you can override</label><input id="revenueProtected" type="number" min="0" step="1000" value="${i.revenueProtected || 0}"></div>
-          <div><div class="muted" style="margin-top:34px">Tip: If you leave this at 0, the calculator will auto-compute from the two fields on the left.</div></div>
-        </div>
-      </section>
-
-      <div class="rowbtn">
-        <span></span>
-        <button class="btn" id="continue1">Continue</button>
-      </div>
-    `;
-  }
-
-  function screenScenarios(){
-    const i = state.inputs;
-    const effAhtFrom50 = throughputToAHTReduction(50); // ≈33.3%
-    return `
-      <section class="card">
-        <h2>Case-Study Presets</h2>
-        <div class="presets">
-          <div class="preset">
-            <h3>Foot Locker</h3>
-            <div class="badge">Resolution Time ↓ 75%</div>
-            <div class="muted">Apply a high AHT reduction scenario to mimic major handling-time gains.</div>
-            <button class="btn" id="presetFoot">Apply</button>
-          </div>
-          <div class="preset">
-            <h3>Trading 212</h3>
-            <div class="badge">CSAT ↑ 93%</div>
-            <div class="muted">Use CSAT uplift to auto-calculate revenue protected from churn/retention.</div>
-            <button class="btn" id="presetT212">Apply</button>
-          </div>
-          <div class="preset">
-            <h3>Gaming1</h3>
-            <div class="badge">Ticket Processing ↑ 50%</div>
-            <div class="muted">Convert throughput gains into an effective AHT reduction (~${effAhtFrom50.toFixed(1)}%).</div>
+  <!-- Load JS as a module so CSP won't block it -->
+  <script type="module" src="./wizard.js"></script>
+  <noscript><div style="padding:12px;color:#ffb4b4;background:#3a0d0d;border-radius:10px;border:1px solid #5a1a1a">Enable JavaScript to use the calculator.</div></noscript>
+</body>
+</html>
